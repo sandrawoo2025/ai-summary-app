@@ -29,11 +29,12 @@ export async function GET(request: NextRequest) {
     }
 
     const arrayBuffer = await fileData.arrayBuffer();
+    const isDownload = searchParams.get('download') === 'true';
 
     return new NextResponse(arrayBuffer, {
       headers: {
         'Content-Type': document.file_type,
-        'Content-Disposition': `inline; filename="${document.file_name}"`,
+        'Content-Disposition': `${isDownload ? 'attachment' : 'inline'}; filename="${document.file_name}"`,
       },
     });
   } catch (error) {
