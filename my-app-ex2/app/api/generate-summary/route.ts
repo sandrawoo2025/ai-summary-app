@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 
-async function generateWithGitHubModels(text: string, token: string): Promise<string> {
+async function generateWithGitHubModels(text: string, token: string, userRequirement?: string): Promise<string> {
+  const systemPrompt = 'You are a helpful assistant that creates concise, accurate summaries of documents. Provide a clear, well-structured summary that captures the main points and key information.';
+  const userInstruction = userRequirement && userRequirement.trim()
+    ? `Please summarize the following document according to this requirement: ${userRequirement.trim()}\n\n${text}`
+    : `Please summarize the following document:\n\n${text}`;
+
   const response = await fetch('https://models.github.ai/inference/chat/completions', {
     method: 'POST',
     headers: {
@@ -13,11 +18,11 @@ async function generateWithGitHubModels(text: string, token: string): Promise<st
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant that creates concise, accurate summaries of documents. Provide a clear, well-structured summary that captures the main points and key information.',
+          content: systemPrompt,
         },
         {
           role: 'user',
-          content: `Please summarize the following document:\n\n${text}`,
+          content: userInstruction,
         },
       ],
       max_tokens: 500,
@@ -49,7 +54,7 @@ function extractiveSummary(text: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { documentId } = body;
+    const { documentId, userRequirement } = body;
 
     if (!documentId) {
       return NextResponse.json({ success: false, error: 'Document ID is required' }, { status: 400 });
@@ -102,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      summary = await generateWithGitHubModels(truncatedText, githubToken);
+      summary = await generateWithGitHubModels(truncatedText, githubToken, userRequirement);
       if (!summary) summary = extractiveSummary(textContent);
     } catch (aiError: unknown) {
       const msg = aiError instanceof Error ? aiError.message : String(aiError);

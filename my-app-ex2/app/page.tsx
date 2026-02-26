@@ -52,13 +52,13 @@ export default function Home() {
     }
   };
 
-  const handleGenerateSummary = async (id: string) => {
+  const handleGenerateSummary = async (id: string, requirement?: string) => {
     setLoadingStates((prev) => ({ ...prev, [id]: 'summarizing' }));
     try {
       const response = await fetch('/api/generate-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId: id }),
+        body: JSON.stringify({ documentId: id, userRequirement: requirement }),
       });
       const result = await response.json();
       if (result.success && result.document) {
